@@ -1,9 +1,9 @@
 {
-  "name": "typescript-action",
-  "version": "0.0.0",
+  "name": "push-to-protected",
+  "version": "1.0.0",
   "private": true,
-  "description": "TypeScript template action",
-  "main": "lib/main.js",
+  "description": "Github Action that pushes to protected branches",
+  "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
     "format": "prettier --write '**/*.ts'",
@@ -15,14 +15,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/Shahaed/action-push-to-protected"
   },
   "keywords": [
     "actions",
     "node",
-    "setup"
+    "github",
+    "typescript",
+    "setup",
+    "push",
+    "protected",
+    "status"
   ],
-  "author": "",
+  "author": "Shahaed Hasan",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.9.1",
