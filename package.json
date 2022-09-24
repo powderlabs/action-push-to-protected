@@ -1,9 +1,9 @@
 {
-  "name": "typescript-action",
-  "version": "0.0.0",
+  "name": "push-to-protected",
+  "version": "1.0.0",
   "private": true,
-  "description": "TypeScript template action",
-  "main": "lib/main.js",
+  "description": "Github Action that pushes to protected branches",
+  "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
     "format": "prettier --write '**/*.ts'",
@@ -15,29 +15,38 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/Shahaed/action-push-to-protected"
   },
   "keywords": [
     "actions",
     "node",
-    "setup"
+    "github",
+    "typescript",
+    "setup",
+    "push",
+    "protected",
+    "status"
   ],
-  "author": "",
+  "author": "Shahaed Hasan",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.6.0"
+    "@actions/core": "^1.9.1",
+    "@actions/github": "^5.0.3",
+    "simple-git": "^3.14.1",
+    "string-argv": "^0.3.1"
   },
   "devDependencies": {
-    "@types/node": "^16.10.5",
-    "@typescript-eslint/parser": "^5.8.1",
-    "@vercel/ncc": "^0.31.1",
-    "eslint": "^7.32.0",
-    "eslint-plugin-github": "^4.3.2",
-    "eslint-plugin-jest": "^25.3.2",
-    "jest": "^27.2.5",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node": "^18.7.19",
+    "@typescript-eslint/parser": "^5.38.0",
+    "@vercel/ncc": "^0.34.0",
+    "eslint": "^8.23.1",
+    "eslint-plugin-github": "^4.3.7",
+    "eslint-plugin-jest": "^27.0.4",
+    "jest": "^29.0.3",
     "js-yaml": "^4.1.0",
-    "prettier": "2.5.1",
-    "ts-jest": "^27.1.2",
-    "typescript": "^4.4.4"
+    "prettier": "2.7.1",
+    "ts-jest": "^29.0.1",
+    "typescript": "^4.8.3"
   }
 }
