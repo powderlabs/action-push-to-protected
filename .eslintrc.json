@@ -42,7 +42,8 @@
     "@typescript-eslint/type-annotation-spacing": "error",
     "@typescript-eslint/unbound-method": "error",
     "i18n-text/no-en": 0,
-    "import/no-named-as-default": 0
+    "import/no-named-as-default": 0,
+    "github/no-then": 0
   },
   "env": {
     "node": true,

@@ -30,7 +30,7 @@ export function getInputs(): Inputs {
     getInput('timeoutMinutes', { trimWhitespace: true }) || '300',
   );
   const intervalSeconds = parseInt(
-    getInput('intervalSeconds', { trimWhitespace: true }) || '5',
+    getInput('intervalSeconds', { trimWhitespace: true }) || '30',
   );
   return {
     token,
