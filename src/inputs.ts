@@ -1,5 +1,5 @@
-import * as core from '@actions/core';
-import * as github from '@actions/github';
+import { getInput, info } from '@actions/core';
+import { context } from '@actions/github';
 
 export interface Inputs {
   token: string;
@@ -15,22 +15,22 @@ export function getInputs(): Inputs {
   const { GITHUB_RUN_ID } = process.env;
   const {
     repo: { owner, repo },
-  } = github.context;
-  const token = core.getInput('token', { required: true });
-  let branchToPushTo = core.getInput('branch-to-push-to');
+  } = context;
+  const token = getInput('token', { required: true });
+  let branchToPushTo = getInput('branch-to-push-to');
   if (
     branchToPushTo === '' ||
     branchToPushTo === undefined ||
     branchToPushTo === null
   ) {
-    core.info('> ${branch-to-push-to} to was not specified, using "master"');
+    info('> ${branch-to-push-to} to was not specified, using "master"');
     branchToPushTo = 'master';
   }
   const timeoutSeconds = parseInt(
-    core.getInput('timeoutMinutes', { trimWhitespace: true }) || '300',
+    getInput('timeoutMinutes', { trimWhitespace: true }) || '300',
   );
   const intervalSeconds = parseInt(
-    core.getInput('intervalSeconds', { trimWhitespace: true }) || '5',
+    getInput('intervalSeconds', { trimWhitespace: true }) || '5',
   );
   return {
     token,

@@ -1,29 +1,29 @@
-import {parseArgsStringToArgv} from 'string-argv'
-import * as core from '@actions/core'
-import YAML from 'js-yaml'
-import * as github from '@actions/github'
-import fs from 'fs'
+import { parseArgsStringToArgv } from 'string-argv';
+import { getInput, debug, error } from '@actions/core';
+import YAML from 'js-yaml';
+import { getOctokit } from '@actions/github';
+import fs from 'fs';
 
 export async function getUserInfo(username?: string) {
-  if (!username) return undefined
-  const token = core.getInput('token', {required: true})
+  if (!username) return undefined;
+  const token = getInput('token', { required: true });
 
-  const octokit = github.getOctokit(token)
-  const res = await octokit.rest.users.getByUsername({username})
+  const octokit = getOctokit(token);
+  const res = await octokit.rest.users.getByUsername({ username });
 
-  core.debug(
-    `Fetched github actor from the API: ${JSON.stringify(res?.data, null, 2)}`
-  )
+  debug(
+    `Fetched github actor from the API: ${JSON.stringify(res?.data, null, 2)}`,
+  );
 
   return {
     name: res?.data?.name,
-    email: res?.data?.email
-  }
+    email: res?.data?.email,
+  };
 }
 
 export function log(err: any | Error, data?: any) {
-  if (data) console.log(data)
-  if (err) core.error(err)
+  if (data) console.log(data);
+  if (err) error(err);
 }
 
 /**
@@ -52,11 +52,11 @@ export function log(err: any | Error, data?: any) {
  * @returns An array, if there's no match it'll be empty
  */
 export function matchGitArgs(string: string) {
-  const parsed = parseArgsStringToArgv(string)
-  core.debug(`Git args parsed:
+  const parsed = parseArgsStringToArgv(string);
+  debug(`Git args parsed:
   - Original: ${string}
-  - Parsed: ${JSON.stringify(parsed)}`)
-  return parsed
+  - Parsed: ${JSON.stringify(parsed)}`);
+  return parsed;
 }
 
 /**
@@ -65,36 +65,36 @@ export function matchGitArgs(string: string) {
  */
 export function parseInputArray(input: string): string[] {
   try {
-    const json = JSON.parse(input)
+    const json = JSON.parse(input);
     if (json && Array.isArray(json) && json.every(e => typeof e == 'string')) {
-      core.debug(`Input parsed as JSON array of length ${json.length}`)
-      return json
+      debug(`Input parsed as JSON array of length ${json.length}`);
+      return json;
     }
   } catch {}
 
   try {
-    const yaml = YAML.load(input)
+    const yaml = YAML.load(input);
     if (yaml && Array.isArray(yaml) && yaml.every(e => typeof e == 'string')) {
-      core.debug(`Input parsed as YAML array of length ${yaml.length}`)
-      return yaml
+      debug(`Input parsed as YAML array of length ${yaml.length}`);
+      return yaml;
     }
   } catch {}
 
-  core.debug('Input parsed as single string')
-  return [input]
+  debug('Input parsed as single string');
+  return [input];
 }
 
 export function readJSON(filePath: string) {
-  let fileContent: string
+  let fileContent: string;
   try {
-    fileContent = fs.readFileSync(filePath, {encoding: 'utf8'})
+    fileContent = fs.readFileSync(filePath, { encoding: 'utf8' });
   } catch {
-    throw `Couldn't read file. File path: ${filePath}`
+    throw `Couldn't read file. File path: ${filePath}`;
   }
 
   try {
-    return JSON.parse(fileContent)
+    return JSON.parse(fileContent);
   } catch {
-    throw `Couldn't parse file to JSON. File path: ${filePath}`
+    throw `Couldn't parse file to JSON. File path: ${filePath}`;
   }
 }
