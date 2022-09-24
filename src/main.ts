@@ -1,4 +1,10 @@
-import { startGroup, info, setFailed, endGroup } from '@actions/core';
+import {
+  startGroup,
+  info,
+  setFailed,
+  endGroup,
+  error as setError,
+} from '@actions/core';
 import {
   deleteRemoteBranch,
   getRequiredStatusChecksForBranch,
@@ -6,9 +12,9 @@ import {
   waitForCheckSuites,
 } from './octokit-requests';
 import path from 'path';
-import { log } from './utils';
 import simpleGit from 'simple-git';
 import { getInputs } from './inputs';
+import { errorHandler, to } from './utils';
 
 const baseDir = path.join(process.cwd());
 const git = simpleGit({ baseDir });
@@ -45,7 +51,7 @@ async function run(): Promise<void> {
     }
 
     info('> Fetching repo...');
-    await git.fetch(log);
+    await git.fetch();
 
     info('> Verifying if target branch exists...');
     const gitBranches = await git.branch();
@@ -73,9 +79,18 @@ async function run(): Promise<void> {
     }
 
     info('> Checking if the remote branch requires status checks...');
-    const requiredStatusChecks = await getRequiredStatusChecksForBranch(
-      branchToPushToInformation,
+
+    const [requiredStatusChecks, requiredStatusChecksError] = await to(
+      getRequiredStatusChecksForBranch(branchToPushToInformation),
     );
+    if (requiredStatusChecksError) {
+      setError(requiredStatusChecksError.message);
+      setFailed(
+        `> Could not get required status checks for branch ${branchToPushTo}. Aborting.`,
+      );
+      endGroup();
+      return;
+    }
 
     // If the branch to push to requires status checks, we create a temporary branch and wait for the checks to pass on it before pushing. Else, we push directly to the branch.
     if (requiredStatusChecks.length > 0) {
