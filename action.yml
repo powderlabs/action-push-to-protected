@@ -1,21 +1,21 @@
-name: 'Push to Protected Branches with Status Checks'
-description: 'Push local workflow commit(s) to protected branches with required status checks.'
-author: 'Shahaed Hasan'
+name: "Push to Protected Branches with Status Checks"
+description: "Push local workflow commit(s) to protected branches with required status checks."
+author: "Shahaed Hasan"
 inputs:
   token:
-    description: 'A Github token with read and write access to actions, administration, checks, code, and pull requests'
+    description: "A Github token with read and write access to actions, administration, checks, code, and pull requests"
     required: true
-  branch:
-    description: 'Target branch for the push. Defaults to master if not specified.'
+  branch-to-push-to:
+    description: "Target branch for the push. Defaults to master if not specified."
     required: false
-    default: 'master'
+    default: "master"
   timeoutSeconds:
-    description: 'The amount of time (in seconds) this action will wait for the status checks to complete before timing out. Defaults to 300 seconds (5 minutes).'
+    description: "The amount of time (in seconds) this action will wait for the status checks to complete before timing out. Defaults to 300 seconds (5 minutes)."
     required: false
   intervalSeconds:
-    description: 'The amount of time (in seconds) this action will wait between each check of the status checks. Defaults to 30 seconds.'
+    description: "The amount of time (in seconds) this action will wait between each check of the status checks. Defaults to 30 seconds."
     required: false
 
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: "node16"
+  main: "dist/index.js"
