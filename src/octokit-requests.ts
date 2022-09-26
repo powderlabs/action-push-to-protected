@@ -1,5 +1,5 @@
-import { error as coreError } from '@actions/core';
-import { getOctokit, context } from '@actions/github';
+import { error as coreError } from "@actions/core";
+import { getOctokit, context } from "@actions/github";
 
 export interface StatusOfChecks {
   allSuccess: boolean;
@@ -19,7 +19,7 @@ export interface TimeoutOptions {
 }
 
 export async function deleteRemoteBranch(
-  githubBranchInformation: GithubBranchInformation,
+  githubBranchInformation: GithubBranchInformation
 ) {
   const { owner, repo, branch, token } = githubBranchInformation;
   const octokit = getOctokit(token);
@@ -36,7 +36,7 @@ export async function deleteRemoteBranch(
 }
 
 export async function getRequiredStatusChecksForBranch(
-  githubBranchInformation: GithubBranchInformation,
+  githubBranchInformation: GithubBranchInformation
 ) {
   try {
     const { branch, token } = githubBranchInformation;
@@ -51,14 +51,14 @@ export async function getRequiredStatusChecksForBranch(
     ).data.contexts;
   } catch (error) {
     coreError(
-      "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it.",
+      "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it."
     );
     throw error;
   }
 }
 
 async function checkStatusOfChecks(
-  githubBranchInformation: GithubBranchInformation,
+  githubBranchInformation: GithubBranchInformation
 ) {
   const { owner, repo, branch, token } = githubBranchInformation;
   const octokit = getOctokit(token);
@@ -72,7 +72,7 @@ async function checkStatusOfChecks(
     ).data.check_runs;
   } catch (error) {
     coreError(
-      "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it.",
+      "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it."
     );
     throw error;
   }
@@ -81,21 +81,21 @@ export type ValueType<T> = T extends Promise<infer U> ? U : T;
 
 export async function waitForCheckSuites(
   githubBranchInformation: GithubBranchInformation,
-  timeoutOptions: TimeoutOptions,
+  timeoutOptions: TimeoutOptions
 ) {
   const { intervalSeconds, timeoutSeconds } = timeoutOptions;
   if (isNaN(intervalSeconds) || isNaN(timeoutSeconds)) {
-    throw new Error('milliseconds not a number');
+    throw new Error("milliseconds not a number");
   }
 
   return new Promise<ValueType<ReturnType<typeof checkStatusOfChecks>>>(
-    async resolve => {
+    async (resolve) => {
       try {
         // Check to see if all of the check suites have already completed
         const firstStatusCheck = await checkStatusOfChecks(
-          githubBranchInformation,
+          githubBranchInformation
         );
-        if (firstStatusCheck.every(check => check.status === 'completed')) {
+        if (firstStatusCheck.every((check) => check.status === "completed")) {
           resolve(firstStatusCheck);
           return;
         }
@@ -107,7 +107,7 @@ export async function waitForCheckSuites(
         const intervalId = setInterval(async () => {
           const status = await checkStatusOfChecks(githubBranchInformation);
 
-          if (status.every(check => check.status === 'completed')) {
+          if (status.every((check) => check.status === "completed")) {
             if (timeoutId) {
               clearTimeout(timeoutId);
             }
@@ -126,9 +126,9 @@ export async function waitForCheckSuites(
           }, timeoutSeconds * 1000);
         }
       } catch (error) {
-        coreError('Error getting status of checks.');
+        coreError("Error getting status of checks.");
         throw error;
       }
-    },
+    }
   );
 }

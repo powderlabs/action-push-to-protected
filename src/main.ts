@@ -1,27 +1,21 @@
-import {
-  startGroup,
-  info,
-  setFailed,
-  endGroup,
-  error as setError,
-} from '@actions/core';
+import { startGroup, info, setFailed, endGroup } from "@actions/core";
 import {
   deleteRemoteBranch,
   getRequiredStatusChecksForBranch,
   GithubBranchInformation,
   waitForCheckSuites,
-} from './octokit-requests';
-import path from 'path';
-import simpleGit from 'simple-git';
-import { getInputs } from './inputs';
-import { errorHandler, to } from './utils';
+} from "./octokit-requests";
+import path from "path";
+import simpleGit from "simple-git";
+import { getInputs } from "./inputs";
+import { errorHandler, to } from "./utils";
 
 const baseDir = path.join(process.cwd());
 const git = simpleGit({ baseDir });
 
 async function run(): Promise<void> {
   try {
-    startGroup('Internal logs');
+    startGroup("Internal logs");
 
     const {
       token,
@@ -40,21 +34,45 @@ async function run(): Promise<void> {
       token,
     };
 
-    info('> Checking for uncommitted changes in the git working tree...');
-    const changedFiles = (await git.diffSummary(['--cached'])).files.length;
-    if (changedFiles > 0) {
+    const [isRepo, isRepoError] = await to(simpleGit().checkIsRepo());
+    if (!isRepo || isRepoError) {
+      errorHandler("This is not a git repository. Aborting.");
+      return;
+    }
+
+    info("> Checking for uncommitted changes in the git working tree...");
+    const [gitDiff, gitDiffError] = await to(git.diffSummary(["--cached"]));
+    if (gitDiffError) {
+      errorHandler(
+        "Error while checking for uncommitted changes. Aborting.",
+        gitDiffError
+      );
+      return;
+    }
+    if (gitDiff.files.length > 0) {
       setFailed(
-        '> There are uncommitted changes in the git working tree. Make sure to commit changes before running this action. Aborting.',
+        "> There are uncommitted changes in the git working tree. Make sure to commit changes before running this action. Aborting."
       );
       endGroup();
       return;
     }
 
-    info('> Fetching repo...');
-    await git.fetch();
+    info("> Fetching repo...");
+    const [, fetchError] = await to(git.fetch());
+    if (fetchError) {
+      errorHandler("Error while fetching repo. Aborting.", fetchError);
+      return;
+    }
 
-    info('> Verifying if target branch exists...');
-    const gitBranches = await git.branch();
+    info("> Verifying if target branch exists...");
+    const [gitBranches, gitBranchesError] = await to(git.branch());
+    if (gitBranchesError) {
+      errorHandler(
+        "Error while fetching branches. Aborting.",
+        gitBranchesError
+      );
+      return;
+    }
     if (!gitBranches.branches.hasOwnProperty(branchToPushTo)) {
       setFailed(`> Branch ${branchToPushTo} does not exist. Aborting.`);
       endGroup();
@@ -62,33 +80,40 @@ async function run(): Promise<void> {
     }
     info(`> Branch ${branchToPushTo} exists. Continuing...`);
 
-    info('> Verifying we are ahead of the remote branch...');
-    const head = await git.revparse(['HEAD']);
-    const aheadCount = Number(
-      (
-        await git.raw([
-          'rev-list',
-          '--count',
-          `origin/${branchToPushTo}..${head}`,
-        ])
-      ).trim(),
+    info("> Verifying we are ahead of the remote branch...");
+    const [head, gitRevParseError] = await to(git.revparse(["HEAD"]));
+    if (gitRevParseError) {
+      errorHandler(
+        "Error while getting HEAD commit hash. Aborting.",
+        gitRevParseError
+      );
+      return;
+    }
+    const [revListCount, revListCountError] = await to(
+      git.raw(["rev-list", "--count", `origin/${branchToPushTo}..${head}`])
     );
+    if (revListCountError) {
+      errorHandler(
+        "Error while getting number of commits ahead of remote branch. Aborting.",
+        revListCountError
+      );
+      return;
+    }
+    const aheadCount = Number(revListCount.trim());
     if (aheadCount === 0) {
       setFailed(`> Local branch is behind the target branch. Aborting.`);
       return;
     }
 
-    info('> Checking if the remote branch requires status checks...');
-
+    info("> Checking if the remote branch requires status checks...");
     const [requiredStatusChecks, requiredStatusChecksError] = await to(
-      getRequiredStatusChecksForBranch(branchToPushToInformation),
+      getRequiredStatusChecksForBranch(branchToPushToInformation)
     );
     if (requiredStatusChecksError) {
-      setError(requiredStatusChecksError.message);
-      setFailed(
+      errorHandler(
         `> Could not get required status checks for branch ${branchToPushTo}. Aborting.`,
+        requiredStatusChecksError
       );
-      endGroup();
       return;
     }
 
@@ -96,19 +121,35 @@ async function run(): Promise<void> {
     if (requiredStatusChecks.length > 0) {
       info(
         `> The remote branch requires status checks: ${requiredStatusChecks.join(
-          ', ',
-        )}.`,
+          ", "
+        )}.`
       );
       info(
-        '> Creating a temporary branch and throwing away all uncommitted changes...',
+        "> Creating a temporary branch and throwing away all uncommitted changes..."
       );
       const temporaryBranch = `push-action/${GITHUB_RUN_ID}/${Date.now()}`;
-      await git.checkout(temporaryBranch, ['-f', '-b']);
+      const [, checkoutError] = await to(
+        git.checkout(temporaryBranch, ["-f", "-b"])
+      );
+      if (checkoutError) {
+        errorHandler(
+          `> Could not create temporary branch ${temporaryBranch}. Aborting.`,
+          checkoutError
+        );
+        return;
+      }
 
-      info('> Pushing the temporary branch to remote...');
-      await git.push('origin', temporaryBranch, ['-f'], (err, data?) => {
-        return log(err, data);
-      });
+      info("> Pushing the temporary branch to remote...");
+      const [, pushError] = await to(
+        git.push("origin", temporaryBranch, ["-f"])
+      );
+      if (pushError) {
+        errorHandler(
+          `> Could not push temporary branch ${temporaryBranch} to remote. Aborting.`,
+          pushError
+        );
+        return;
+      }
 
       const temporaryBranchInformation: GithubBranchInformation = {
         owner,
@@ -117,40 +158,68 @@ async function run(): Promise<void> {
         token,
       };
 
-      info('> Waiting for the status checks to pass...');
-      const statusOnTemp = await waitForCheckSuites(
-        temporaryBranchInformation,
-        {
+      info("> Waiting for the status checks to pass...");
+      const [statusOnTemp, waitForChecksError] = await to(
+        waitForCheckSuites(temporaryBranchInformation, {
           intervalSeconds,
           timeoutSeconds,
-        },
+        })
       );
-      const passedOnTemp = statusOnTemp.every(
-        status => status.conclusion !== 'success',
-      );
-      if (!passedOnTemp) {
-        setFailed(
-          `> The status checks did not pass on the temporary branch. Aborting.`,
+      if (waitForChecksError) {
+        errorHandler(
+          `> Error while waiting on status checks on temporary branch ${temporaryBranch}. Aborting.`,
+          waitForChecksError
         );
         return;
       }
+      const passedOnTemp = statusOnTemp.every(
+        (status) => status.conclusion !== "success"
+      );
+      if (!passedOnTemp) {
+        setFailed(
+          `> The status checks did not pass on the temporary branch. Aborting.`
+        );
+        return;
+      }
+
       info(`> The status checks passed!`);
       info(`> Pushing ${temporaryBranch} --> origin/${branchToPushTo} ...`);
-
-      await git.checkout(branchToPushTo);
-      await git.reset(['--hard', temporaryBranch]);
-      await git.push((err, data?) => {
-        return log(err, data);
-      });
+      const [, secondCheckoutError] = await to(git.checkout(branchToPushTo));
+      if (secondCheckoutError) {
+        errorHandler(
+          `> Could not checkout branch ${branchToPushTo}. Aborting.`,
+          secondCheckoutError
+        );
+        return;
+      }
+      const [, resetError] = await to(git.reset(["--hard", temporaryBranch]));
+      if (resetError) {
+        errorHandler(
+          `> Could not reset branch ${branchToPushTo} to temporary branch ${temporaryBranch}. Aborting.`,
+          resetError
+        );
+        return;
+      }
+      const [, secondPushError] = await to(git.push());
+      if (secondPushError) {
+        errorHandler(
+          `> Could not push branch ${branchToPushTo} to remote. Aborting.`,
+          secondPushError
+        );
+        return;
+      }
 
       info(`> Deleting ${temporaryBranch} ...`);
       await deleteRemoteBranch(temporaryBranchInformation);
     } else {
-      info(`> The remote branch does not require status checks.`);
+      setFailed(`> The remote branch does not require status checks.`);
+      info(
+        `> This action won't do anything right now, but it's easy to modify to just push to the branch.`
+      );
     }
 
     endGroup();
-    info('> Task completed.');
+    info("> Task completed.");
   } catch (error) {
     if (error instanceof Error) setFailed(error.message);
   }
