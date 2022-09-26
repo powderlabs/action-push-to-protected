@@ -23,7 +23,7 @@ export function getInputs(): Inputs {
     branchToPushTo === undefined ||
     branchToPushTo === null
   ) {
-    info('> ${branch-to-push-to} to was not specified, using "master"');
+    info("> ${branch-to-push-to} to was not specified, we'll try master.");
     branchToPushTo = "master";
   }
   const timeoutSeconds = parseInt(
