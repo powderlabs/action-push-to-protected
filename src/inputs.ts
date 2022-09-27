@@ -54,7 +54,7 @@ export function getInputs(): ActionsInputsSanCommit | ActionsInputsWithCommit {
     );
   }
 
-  const shouldCommit = getBooleanInput("should-commit");
+  const shouldCommit = getBooleanInput("shouldCommit");
   const actionInputs: ActionsInputsSanCommit = {
     token,
     branchToPushTo,
@@ -66,8 +66,8 @@ export function getInputs(): ActionsInputsSanCommit | ActionsInputsWithCommit {
     GITHUB_RUN_ID: context.runId.toString(),
   };
   if (shouldCommit) {
-    const commitMessage = getInput("commit-message", { required: true });
-    const commitArgs = matchGitArgs(getInput("commit-args"));
+    const commitMessage = getInput("commitMessage", { required: true });
+    const commitArgs = matchGitArgs(getInput("commitArgs"));
     const authorEmail = emptyOrUndefinedString(getInput("authorEmail"))
       ? context.actor
       : getInput("authorEmail");
