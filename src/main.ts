@@ -1,4 +1,4 @@
-import { startGroup, info, setFailed, endGroup } from "@actions/core";
+import { startGroup, info, setFailed, endGroup, warning } from "@actions/core";
 import {
   deleteRemoteBranch,
   getRequiredStatusChecksForBranch,
@@ -8,7 +8,7 @@ import {
 import path from "path";
 import simpleGit from "simple-git";
 import { ActionsInputsWithCommit, getInputs } from "./inputs";
-import { errorHandler, to } from "./utils";
+import { errorHandler, outputGitStatus, to } from "./utils";
 import { commit } from "./git-actions";
 
 const baseDir = path.join(process.cwd());
@@ -44,38 +44,39 @@ async function run(): Promise<void> {
     }
 
     info("> Checking for uncommitted changes in the git working tree...");
-    const [gitDiff, gitDiffError] = await to(git.diffSummary(["--cached"]));
-    if (gitDiffError) {
-      errorHandler(
-        "Error while checking for uncommitted changes. Aborting.",
-        gitDiffError
-      );
+    const [gitStatus, gitStatusError] = await to(git.status());
+    if (gitStatusError) {
+      errorHandler("Error while checking for uncommitted changes.");
       return;
     }
-    if (gitDiff.files.length > 0) {
-      if (!shouldCommit) {
-        setFailed(
-          "> There are uncommitted changes in the git working tree and you haven't set `shouldCommit` to true. Make sure to commit changes before running this action. Aborting."
-        );
-        endGroup();
-        return;
-      }
-      info("> Committing changes...");
-      const { commitMessage, commitArgs, ...gitConfig } =
-        gitCommitInputs as ActionsInputsWithCommit;
-      const [gitCommit, gitCommitError] = await to(
-        commit(git, commitMessage, commitArgs, gitConfig)
-      );
-      if (gitCommitError) {
-        errorHandler(
-          "> Error while committing changes. Aborting.",
-          gitCommitError
-        );
-        return;
-      }
-      info(`> Committed changes with commit hash ${gitCommit}`);
+    if (gitStatus.isClean()) {
+      info("> Nothing to commit, working tree clean.");
     } else {
-      info("> No uncommitted changes in the git working tree.");
+      outputGitStatus(
+        gitStatus.modified,
+        gitStatus.staged,
+        gitStatus.not_added
+      );
+      if (shouldCommit) {
+        info("> Committing changes...");
+        const { commitMessage, commitArgs, ...gitConfig } =
+          gitCommitInputs as ActionsInputsWithCommit;
+        const [gitCommit, gitCommitError] = await to(
+          commit(git, commitMessage, commitArgs, gitConfig)
+        );
+        if (gitCommitError) {
+          errorHandler(
+            "> Error while committing changes. Aborting.",
+            gitCommitError
+          );
+          return;
+        }
+        info(`> Committed changes with commit hash ${gitCommit}`);
+      } else {
+        warning(
+          "> There are uncommitted changes in the git working tree and you haven't set `shouldCommit` to true. These dirty changes will not be pushed."
+        );
+      }
     }
 
     info("> Fetching repo...");

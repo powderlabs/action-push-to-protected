@@ -1,4 +1,10 @@
-import { setFailed, endGroup, debug, error as setError } from "@actions/core";
+import {
+  setFailed,
+  endGroup,
+  debug,
+  error as setError,
+  info,
+} from "@actions/core";
 import parseArgsStringToArgv from "string-argv";
 
 export async function to<T>(
@@ -56,4 +62,17 @@ export function log(err: unknown, result: unknown) {
     typeof err === "string" ? setError(err) : setError(JSON.stringify(err));
   }
   debug(result as string);
+}
+
+export function outputGitStatus(
+  modifiedFiles: string[],
+  stagedFiles: string[],
+  untrackedFiles: string[]
+) {
+  info(`> ${modifiedFiles.length} tracked file(s) have been modified.`);
+  modifiedFiles.map((file) => info(`  \x1b[35mmodified: ${file}`));
+  info(`> ${stagedFiles.length} tracked file(s) have been staged.`);
+  stagedFiles.map((file) => info(`  \x1b[32mstaged: ${file}`));
+  info(`> ${untrackedFiles.length} untracked files.`);
+  untrackedFiles.map((file) => info(`  \x1b[31muntracked: ${file}`));
 }
