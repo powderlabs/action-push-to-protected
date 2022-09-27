@@ -7,8 +7,9 @@ import {
 } from "./octokit-requests";
 import path from "path";
 import simpleGit from "simple-git";
-import { getInputs } from "./inputs";
+import { ActionsInputsWithCommit, getInputs } from "./inputs";
 import { errorHandler, to } from "./utils";
+import { commit } from "./git-actions";
 
 const baseDir = path.join(process.cwd());
 const git = simpleGit({ baseDir });
@@ -25,6 +26,8 @@ async function run(): Promise<void> {
       owner,
       repo,
       GITHUB_RUN_ID,
+      shouldCommit,
+      ...gitCommitInputs
     } = getInputs();
 
     const branchToPushToInformation: GithubBranchInformation = {
@@ -50,11 +53,29 @@ async function run(): Promise<void> {
       return;
     }
     if (gitDiff.files.length > 0) {
-      setFailed(
-        "> There are uncommitted changes in the git working tree. Make sure to commit changes before running this action. Aborting."
+      if (!shouldCommit) {
+        setFailed(
+          "> There are uncommitted changes in the git working tree and you haven't set `shouldCommit` to true. Make sure to commit changes before running this action. Aborting."
+        );
+        endGroup();
+        return;
+      }
+      info("> Committing changes...");
+      const { commitMessage, commitArgs, ...gitConfig } =
+        gitCommitInputs as ActionsInputsWithCommit;
+      const [gitCommit, gitCommitError] = await to(
+        commit(git, commitMessage, commitArgs, gitConfig)
       );
-      endGroup();
-      return;
+      if (gitCommitError) {
+        errorHandler(
+          "> Error while committing changes. Aborting.",
+          gitCommitError
+        );
+        return;
+      }
+      info(`> Committed changes with commit hash ${gitCommit}`);
+    } else {
+      info("> No uncommitted changes in the git working tree.");
     }
 
     info("> Fetching repo...");

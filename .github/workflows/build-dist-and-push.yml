@@ -1,0 +1,37 @@
+name: "build-dist-and-push"
+on:
+  push:
+    branches:
+      - main
+      - "releases/*"
+
+jobs:
+  build-and-push: # Keep the dist updated
+    runs-on: ubuntu-latest
+    if: github.event.head_commit.author.email != 'noreply@github.com' # Stop infinite loops
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set Node.js 16.x
+        uses: actions/setup-node@v2.5.1
+        with:
+          node-version: 16.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebuild the dist/ directory
+        run: |
+          npm run build
+          npm run package
+
+      - name: Commit and push the changes
+        uses: ./
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branchToPushTo: main
+          intervalSeconds: 10
+          shouldCommit: true
+          commitMessage: "Updating dist with latest changes"
+          commitArgs: "-a --no-verify --allow-empty"
+          authorEmail: "noreply@github.com"

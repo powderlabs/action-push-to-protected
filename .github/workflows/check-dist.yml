@@ -10,16 +10,16 @@ on:
     branches:
       - main
     paths-ignore:
-      - '**.md'
+      - "**.md"
   pull_request:
     paths-ignore:
-      - '**.md'
+      - "**.md"
   workflow_dispatch:
 
 jobs:
   check-dist:
     runs-on: ubuntu-latest
-
+    if: github.event.head_commit.author.email == 'noreply@github.com' # Only run status checks if the commit was made by the bot
     steps:
       - uses: actions/checkout@v2
 

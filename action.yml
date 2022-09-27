@@ -5,15 +5,40 @@ inputs:
   token:
     description: "A Github token with read and write access to actions, administration, checks, code, and pull requests"
     required: true
-  branch-to-push-to:
+  branchToPushTo:
     description: "Target branch for the push. Defaults to master if not specified."
     required: false
     default: "master"
   timeoutSeconds:
     description: "The amount of time (in seconds) this action will wait for the status checks to complete before timing out. Defaults to 300 seconds (5 minutes)."
     required: false
+    default: "300"
   intervalSeconds:
     description: "The amount of time (in seconds) this action will wait between each check of the status checks. Defaults to 30 seconds."
+    required: false
+    default: "30"
+  shouldCommit:
+    description: "Whether or not this action should commit the local changes before pushing. Defaults to false. All following inputs are not used when this is false."
+    required: false
+    default: "false"
+  commitMessage:
+    description: "The commit message to use when committing changes. Defaults to 'Automated commit from GitHub Actions'"
+    required: false
+    default: "Automated commit from GitHub Actions"
+  commitArgs:
+    description: "Additional arguments to pass to the commit command. Recommend adding '-a' if the changes are on tracked files and not staged, '--no-verify' if you have any any pre-commit hooks, and '--allow-empty' if you want to commit even if there are no changes."
+    required: false
+  authorName:
+    description: "The name of the author to use when committing changes. Defaults to the name of the user who created the token."
+    required: false
+  authorEmail:
+    description: "The email of the author to use when committing changes. Defaults to `${actor}@users.noreply.github.com`"
+    required: false
+  commitAuthorName:
+    description: "The name of the author to use when committing changes. Defaults to the `authorName`"
+    required: false
+  commitAuthorEmail:
+    description: "The email of the author to use when committing changes. Defaults to the `authorEmail`"
     required: false
 
 runs:
