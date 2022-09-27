@@ -38,19 +38,19 @@ export function getInputs(): ActionsInputsSanCommit | ActionsInputsWithCommit {
     branchToPushTo = "master";
   }
   const timeoutSeconds = parseInt(
-    getInput("timeoutMinutes", { trimWhitespace: true })
+    getInput("timeoutSeconds", { trimWhitespace: true })
   );
   const intervalSeconds = parseInt(
     getInput("intervalSeconds", { trimWhitespace: true })
   );
   if (timeoutSeconds < 0 || intervalSeconds < 0) {
     throw new Error(
-      "The timeoutMinutes and intervalSeconds inputs must be positive numbers."
+      "The timeoutSeconds and intervalSeconds inputs must be positive numbers."
     );
   }
   if (isNaN(timeoutSeconds) || isNaN(intervalSeconds)) {
     throw new Error(
-      "The timeoutMinutes and intervalSeconds inputs must be numbers."
+      "The timeoutSeconds and intervalSeconds inputs must be numbers."
     );
   }
 
