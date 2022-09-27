@@ -32,9 +32,9 @@ export function getInputs(): ActionsInputsSanCommit | ActionsInputsWithCommit {
     repo: { owner, repo },
   } = context;
   const token = getInput("token", { required: true });
-  let branchToPushTo = getInput("branch-to-push-to");
+  let branchToPushTo = getInput("branchToPushTo");
   if (emptyOrUndefinedString(branchToPushTo)) {
-    info("> ${branch-to-push-to} to was not specified, we'll try master.");
+    info("> ${branchToPushTo} to was not specified, we'll try master.");
     branchToPushTo = "master";
   }
   const timeoutSeconds = parseInt(
