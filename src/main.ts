@@ -166,7 +166,7 @@ async function run(): Promise<void> {
       );
       const temporaryBranch = `push-action/${GITHUB_RUN_ID}/${Date.now()}`;
       const [, checkoutError] = await to(
-        git.checkout(temporaryBranch, ["-f", "-b"])
+        git.checkout(["-f", "b", `${temporaryBranch}`])
       );
       if (checkoutError) {
         errorHandler(
