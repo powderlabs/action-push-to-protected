@@ -70,6 +70,10 @@ export async function checkStatusOfChecks(
         ref: branch,
       })
     ).data.check_runs;
+    if (checkRuns.length === 0) {
+      coreDebug("No checks found for branch yet.");
+      throw new RequestError("No checks found for branch yet.", 418, {});
+    }
     coreDebug(JSON.stringify(checkRuns));
     return checkRuns;
   } catch (error) {
@@ -80,8 +84,7 @@ export async function checkStatusOfChecks(
       }
       if (error.status === 422) {
         coreDebug(
-          error.message +
-            " This is probably because the branch doesn't exist yet."
+          `${error.message} This is probably because the branch doesn't exist yet.`
         );
         throw error;
       }
@@ -91,6 +94,7 @@ export async function checkStatusOfChecks(
       );
       throw error;
     }
+    throw error;
   }
 }
 export type ValueType<T> = T extends Promise<infer U> ? U : T;
