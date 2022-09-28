@@ -26,7 +26,6 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
-    if: github.event.head_commit.author.email == 'noreply@github.com' # Only run status checks if the commit was made by the bot
     permissions:
       actions: read
       contents: read
