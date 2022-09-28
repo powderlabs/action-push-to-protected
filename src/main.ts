@@ -66,7 +66,7 @@ async function run(): Promise<void> {
         );
         if (gitCommitError) {
           errorHandler(
-            "> Error while committing changes. Aborting.",
+            "Error while committing changes. Aborting.",
             gitCommitError
           );
           return;
@@ -148,7 +148,7 @@ async function run(): Promise<void> {
     );
     if (requiredStatusChecksError) {
       errorHandler(
-        `> Could not get required status checks for branch ${branchToPushTo}. Aborting.`,
+        `Problem getting required status checks on branch '${branchToPushTo}'. Aborting.`,
         requiredStatusChecksError
       );
       return;
@@ -170,7 +170,7 @@ async function run(): Promise<void> {
       );
       if (checkoutError) {
         errorHandler(
-          `> Could not create temporary branch ${temporaryBranch}. Aborting.`,
+          `Could not create temporary branch ${temporaryBranch}. Aborting.`,
           checkoutError
         );
         return;
@@ -182,7 +182,7 @@ async function run(): Promise<void> {
       );
       if (pushError) {
         errorHandler(
-          `> Could not push temporary branch ${temporaryBranch} to remote. Aborting.`,
+          `Could not push temporary branch ${temporaryBranch} to remote. Aborting.`,
           pushError
         );
         return;
@@ -204,7 +204,7 @@ async function run(): Promise<void> {
       );
       if (waitForChecksError) {
         errorHandler(
-          `> Error while waiting on status checks on temporary branch ${temporaryBranch}. Aborting.`,
+          `Error while waiting on status checks on temporary branch ${temporaryBranch}. Aborting.`,
           waitForChecksError
         );
         return;
@@ -224,7 +224,7 @@ async function run(): Promise<void> {
       const [, secondCheckoutError] = await to(git.checkout(branchToPushTo));
       if (secondCheckoutError) {
         errorHandler(
-          `> Could not checkout branch ${branchToPushTo}. Aborting.`,
+          `Could not checkout branch ${branchToPushTo}. Aborting.`,
           secondCheckoutError
         );
         return;
@@ -232,7 +232,7 @@ async function run(): Promise<void> {
       const [, resetError] = await to(git.reset(["--hard", temporaryBranch]));
       if (resetError) {
         errorHandler(
-          `> Could not reset branch ${branchToPushTo} to temporary branch ${temporaryBranch}. Aborting.`,
+          `Could not reset branch ${branchToPushTo} to temporary branch ${temporaryBranch}. Aborting.`,
           resetError
         );
         return;
@@ -240,7 +240,7 @@ async function run(): Promise<void> {
       const [, secondPushError] = await to(git.push());
       if (secondPushError) {
         errorHandler(
-          `> Could not push branch ${branchToPushTo} to remote. Aborting.`,
+          `Could not push branch ${branchToPushTo} to remote. Aborting.`,
           secondPushError
         );
         return;

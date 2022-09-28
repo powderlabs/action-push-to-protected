@@ -51,7 +51,7 @@ export async function getRequiredStatusChecksForBranch(
     ).data.contexts;
   } catch (error) {
     coreError(
-      "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it."
+      "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it or the branch is not protected."
     );
     throw error;
   }
