@@ -195,59 +195,62 @@ async function run(): Promise<void> {
         token,
       };
 
-      info("> Waiting for the status checks to pass...");
-      const [statusOnTemp, waitForChecksError] = await to(
-        waitForCheckSuites(temporaryBranchInformation, {
-          intervalSeconds,
-          timeoutSeconds,
-        })
-      );
-      if (waitForChecksError) {
-        errorHandler(
-          `Error while waiting on status checks on temporary branch ${temporaryBranch}. Aborting.`,
-          waitForChecksError
+      // Now that the temporary branch is pushed, we want to delete that branch even if the next steps fails.
+      try {
+        info("> Waiting for the status checks to pass...");
+        const [statusOnTemp, waitForChecksError] = await to(
+          waitForCheckSuites(temporaryBranchInformation, {
+            intervalSeconds,
+            timeoutSeconds,
+          })
         );
-        return;
-      }
-      const passedOnTemp = statusOnTemp.every(
-        (status) => status.conclusion !== "success"
-      );
-      if (!passedOnTemp) {
-        setFailed(
-          `> The status checks did not pass on the temporary branch. Aborting.`
+        if (waitForChecksError) {
+          errorHandler(
+            `Error while waiting on status checks on temporary branch ${temporaryBranch}. Aborting.`,
+            waitForChecksError
+          );
+          return;
+        }
+        const passedOnTemp = statusOnTemp.every(
+          (status) => status.conclusion !== "success"
         );
-        return;
-      }
+        if (!passedOnTemp) {
+          setFailed(
+            `> The status checks did not pass on the temporary branch. Aborting.`
+          );
+          return;
+        }
 
-      info(`> The status checks passed!`);
-      info(`> Pushing ${temporaryBranch} --> origin/${branchToPushTo} ...`);
-      const [, secondCheckoutError] = await to(git.checkout(branchToPushTo));
-      if (secondCheckoutError) {
-        errorHandler(
-          `Could not checkout branch ${branchToPushTo}. Aborting.`,
-          secondCheckoutError
-        );
-        return;
+        info(`> The status checks passed!`);
+        info(`> Pushing ${temporaryBranch} --> origin/${branchToPushTo} ...`);
+        const [, secondCheckoutError] = await to(git.checkout(branchToPushTo));
+        if (secondCheckoutError) {
+          errorHandler(
+            `Could not checkout branch ${branchToPushTo}. Aborting.`,
+            secondCheckoutError
+          );
+          return;
+        }
+        const [, resetError] = await to(git.reset(["--hard", temporaryBranch]));
+        if (resetError) {
+          errorHandler(
+            `Could not reset branch ${branchToPushTo} to temporary branch ${temporaryBranch}. Aborting.`,
+            resetError
+          );
+          return;
+        }
+        const [, secondPushError] = await to(git.push());
+        if (secondPushError) {
+          errorHandler(
+            `Could not push branch ${branchToPushTo} to remote. Aborting.`,
+            secondPushError
+          );
+          return;
+        }
+      } finally {
+        info(`> Deleting ${temporaryBranch} ...`);
+        await deleteRemoteBranch(temporaryBranchInformation);
       }
-      const [, resetError] = await to(git.reset(["--hard", temporaryBranch]));
-      if (resetError) {
-        errorHandler(
-          `Could not reset branch ${branchToPushTo} to temporary branch ${temporaryBranch}. Aborting.`,
-          resetError
-        );
-        return;
-      }
-      const [, secondPushError] = await to(git.push());
-      if (secondPushError) {
-        errorHandler(
-          `Could not push branch ${branchToPushTo} to remote. Aborting.`,
-          secondPushError
-        );
-        return;
-      }
-
-      info(`> Deleting ${temporaryBranch} ...`);
-      await deleteRemoteBranch(temporaryBranchInformation);
     } else {
       setFailed(`> The remote branch does not require status checks.`);
       info(
