@@ -166,11 +166,11 @@ async function run(): Promise<void> {
       );
       const temporaryBranch = `push-action/${GITHUB_RUN_ID}/${Date.now()}`;
       const [, checkoutError] = await to(
-        git.checkout(["-f", "b", `${temporaryBranch}`])
+        git.checkout(["-f", "-b", `${temporaryBranch}`])
       );
       if (checkoutError) {
         errorHandler(
-          `Could not create temporary branch ${temporaryBranch}. Aborting.`,
+          `Could not create temporary branch ${temporaryBranch}. Check if you have a branch called 'push-action' if the error is something like: 'cannot lock ref...'. Aborting.`,
           checkoutError
         );
         return;
