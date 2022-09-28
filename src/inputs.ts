@@ -69,10 +69,10 @@ export function getInputs(): ActionsInputsSanCommit | ActionsInputsWithCommit {
     const commitMessage = getInput("commitMessage", { required: true });
     const commitArgs = matchGitArgs(getInput("commitArgs"));
     const authorEmail = emptyOrUndefinedString(getInput("authorEmail"))
-      ? context.actor
+      ? `${context.actor}@users.noreply.github.com`
       : getInput("authorEmail");
     const authorName = emptyOrUndefinedString(getInput("authorName"))
-      ? `${context.actor}@users.noreply.github.com`
+      ? context.actor
       : getInput("authorName");
     const committerEmail = emptyOrUndefinedString(getInput("committerEmail"))
       ? authorEmail

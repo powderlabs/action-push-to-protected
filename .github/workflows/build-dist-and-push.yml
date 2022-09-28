@@ -12,6 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Get Admin Bot Token
+        uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Set Node.js 16.x
         uses: actions/setup-node@v2.5.1
         with:
@@ -28,7 +35,7 @@ jobs:
       - name: Commit and push the changes
         uses: ./
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.generate_token.outputs.token }}
           branchToPushTo: main
           intervalSeconds: 10
           shouldCommit: true
