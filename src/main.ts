@@ -79,6 +79,21 @@ async function run(): Promise<void> {
       }
     }
 
+    // Warn user if the tree is still dirty
+    const [gitStatus2, gitStatusError2] = await to(git.status());
+    if (gitStatusError2) {
+      errorHandler("Error getting git status for the second time.");
+      return;
+    }
+    if (!gitStatus2.isClean()) {
+      warning("> The tree is dirty. Continuing...");
+      outputGitStatus(
+        gitStatus2.modified,
+        gitStatus2.staged,
+        gitStatus2.not_added
+      );
+    }
+
     info("> Fetching repo...");
     const [, fetchError] = await to(git.fetch());
     if (fetchError) {
