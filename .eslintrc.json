@@ -47,7 +47,8 @@
     "@typescript-eslint/unbound-method": "error",
     "i18n-text/no-en": 0,
     "import/no-named-as-default": 0,
-    "github/no-then": 0
+    "github/no-then": 0,
+    "prettier/prettier": 0
   },
   "env": {
     "node": true,

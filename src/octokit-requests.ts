@@ -59,7 +59,7 @@ export async function getRequiredStatusChecksForBranch(
   }
 }
 
-export async function checkStatusOfChecks(
+export async function getStatusOfChecks(
   githubBranchInformation: GithubBranchInformation
 ) {
   const { owner, repo, branch, token } = githubBranchInformation;
@@ -81,7 +81,7 @@ export async function checkStatusOfChecks(
       );
       throw new ChecksError("Status protected branch has no checks");
     }
-    coreDebug(JSON.stringify(checkRuns));
+    coreDebug(`Status checks status: ${JSON.stringify(checkRuns)}`);
     return checkRuns;
   } catch (error) {
     if (error instanceof RequestError) {
@@ -108,38 +108,69 @@ export type ValueType<T> = T extends Promise<infer U> ? U : T;
 
 export async function waitForCheckSuites(
   githubBranchInformation: GithubBranchInformation,
-  timeoutOptions: TimeoutOptions
+  timeoutOptions: TimeoutOptions,
+  requiredStatusChecks: string[]
 ) {
   const { intervalSeconds, timeoutSeconds } = timeoutOptions;
 
-  return new Promise<ValueType<ReturnType<typeof checkStatusOfChecks>>>(
+  return new Promise<ValueType<ReturnType<typeof getStatusOfChecks>>>(
     async (resolve) => {
       try {
-        // Is set by setTimeout after the below setInterval
-        let timeoutId: ReturnType<typeof setTimeout>;
+        // Fail action if ${timeoutSeconds} is reached
+        const timeoutId = setTimeout(async () => {
+          clearInterval(intervalId);
+          coreError(`Timeout of ${timeoutSeconds} seconds reached.`);
+
+          const statusOfChecks = await getStatusOfChecks(
+            githubBranchInformation
+          );
+          if (!statusOfChecks.every((check) => check.status === "completed")) {
+            coreDebug(
+              "Seems like there are still a few outstanding status checks. Try increasing the timeout."
+            );
+          } else if (
+            !statusOfChecks.every((check) =>
+              requiredStatusChecks.includes(check.name)
+            )
+          ) {
+            coreDebug(
+              "Seems like not all required status checks on the branch we are trying to push to were run on the temporary branch. Check the readme on how to configure status checks to run on the temp branch also."
+            );
+          }
+          throw new Error(`Timeout of ${timeoutSeconds} seconds reached.`);
+        }, timeoutSeconds * 1000);
 
         // Continue to check for completion every ${intervalSeconds}
         const intervalId = setInterval(async () => {
-          const status = await checkStatusOfChecks(githubBranchInformation);
+          const statusOfChecks = await getStatusOfChecks(
+            githubBranchInformation
+          );
 
-          if (status.every((check) => check.status === "completed")) {
+          const hasAllRequiredChecksCompleted = requiredStatusChecks.every(
+            (requiredCheck) => {
+              const checkRun = statusOfChecks.find(
+                (check) => check.name === requiredCheck
+              );
+              if (checkRun === undefined) {
+                coreDebug(
+                  `Required check ${requiredCheck} is not present in the list of checks. The check might not have started on the branch yet.`
+                );
+                return false;
+              }
+              if (checkRun.status !== "completed") return false;
+              return true;
+            }
+          );
+
+          if (hasAllRequiredChecksCompleted) {
             if (timeoutId) {
               clearTimeout(timeoutId);
             }
             clearInterval(intervalId);
-            resolve(status);
+            resolve(statusOfChecks);
             return;
           }
         }, intervalSeconds * 1000);
-
-        // Fail action if ${timeoutSeconds} is reached
-        if (timeoutSeconds) {
-          timeoutId = setTimeout(() => {
-            clearInterval(intervalId);
-            coreError(`Timeout of ${timeoutSeconds} seconds reached.`);
-            throw new Error(`Timeout of ${timeoutSeconds} seconds reached.`);
-          }, timeoutSeconds * 1000);
-        }
       } catch (error) {
         coreError("Error getting status of checks.");
         throw error;

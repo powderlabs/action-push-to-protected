@@ -199,10 +199,14 @@ async function run(): Promise<void> {
       try {
         info("> Waiting for the status checks to pass...");
         const [statusOnTemp, waitForChecksError] = await to(
-          waitForCheckSuites(temporaryBranchInformation, {
-            intervalSeconds,
-            timeoutSeconds,
-          })
+          waitForCheckSuites(
+            temporaryBranchInformation,
+            {
+              intervalSeconds,
+              timeoutSeconds,
+            },
+            requiredStatusChecks
+          )
         );
         if (waitForChecksError) {
           errorHandler(
