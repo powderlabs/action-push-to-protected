@@ -1,5 +1,5 @@
-import { error as coreError } from "@actions/core";
-import { getOctokit, context } from "@actions/github";
+import { error as coreError, debug as coreDebug } from "@actions/core";
+import { getOctokit } from "@actions/github";
 
 export interface StatusOfChecks {
   allSuccess: boolean;
@@ -39,16 +39,15 @@ export async function getRequiredStatusChecksForBranch(
   githubBranchInformation: GithubBranchInformation
 ) {
   try {
-    const { branch, token } = githubBranchInformation;
+    const { owner, repo, branch, token } = githubBranchInformation;
     const octokit = getOctokit(token);
 
-    return (
-      await octokit.rest.repos.getStatusChecksProtection({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        branch,
-      })
-    ).data.contexts;
+    const branchInfo = await octokit.rest.repos.getBranch({
+      owner,
+      repo,
+      branch,
+    });
+    return branchInfo.data.protection.required_status_checks?.contexts ?? [];
   } catch (error) {
     coreError(
       "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it or the branch is not protected."
@@ -57,19 +56,21 @@ export async function getRequiredStatusChecksForBranch(
   }
 }
 
-async function checkStatusOfChecks(
+export async function checkStatusOfChecks(
   githubBranchInformation: GithubBranchInformation
 ) {
   const { owner, repo, branch, token } = githubBranchInformation;
   const octokit = getOctokit(token);
   try {
-    return (
+    const checkRuns = (
       await octokit.rest.checks.listForRef({
         owner,
         repo,
         ref: branch,
       })
     ).data.check_runs;
+    coreDebug(JSON.stringify(checkRuns));
+    return checkRuns;
   } catch (error) {
     coreError(
       "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it."
@@ -84,22 +85,10 @@ export async function waitForCheckSuites(
   timeoutOptions: TimeoutOptions
 ) {
   const { intervalSeconds, timeoutSeconds } = timeoutOptions;
-  if (isNaN(intervalSeconds) || isNaN(timeoutSeconds)) {
-    throw new Error("milliseconds not a number");
-  }
 
   return new Promise<ValueType<ReturnType<typeof checkStatusOfChecks>>>(
     async (resolve) => {
       try {
-        // Check to see if all of the check suites have already completed
-        const firstStatusCheck = await checkStatusOfChecks(
-          githubBranchInformation
-        );
-        if (firstStatusCheck.every((check) => check.status === "completed")) {
-          resolve(firstStatusCheck);
-          return;
-        }
-
         // Is set by setTimeout after the below setInterval
         let timeoutId: ReturnType<typeof setTimeout>;
 
