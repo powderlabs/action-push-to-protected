@@ -1,5 +1,6 @@
 import { error as coreError, debug as coreDebug } from "@actions/core";
 import { getOctokit } from "@actions/github";
+import { RequestError } from "@octokit/request-error";
 
 export interface StatusOfChecks {
   allSuccess: boolean;
@@ -72,10 +73,24 @@ export async function checkStatusOfChecks(
     coreDebug(JSON.stringify(checkRuns));
     return checkRuns;
   } catch (error) {
-    coreError(
-      "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it."
-    );
-    throw error;
+    if (error instanceof RequestError) {
+      if (error.status === 401) {
+        coreError("The token provided does not have access to the branch.");
+        throw error;
+      }
+      if (error.status === 422) {
+        coreDebug(
+          error.message +
+            " This is probably because the branch doesn't exist yet."
+        );
+        throw error;
+      }
+    } else {
+      coreError(
+        `Unexpected error getting status of checks on branch ${branch}.`
+      );
+      throw error;
+    }
   }
 }
 export type ValueType<T> = T extends Promise<infer U> ? U : T;
