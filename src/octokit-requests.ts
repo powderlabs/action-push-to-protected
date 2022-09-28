@@ -19,6 +19,8 @@ export interface TimeoutOptions {
   intervalSeconds: number;
 }
 
+class ChecksError extends Error {}
+
 export async function deleteRemoteBranch(
   githubBranchInformation: GithubBranchInformation
 ) {
@@ -50,7 +52,7 @@ export async function getRequiredStatusChecksForBranch(
     });
     return branchInfo.data.protection.required_status_checks?.contexts ?? [];
   } catch (error) {
-    coreError(
+    coreDebug(
       "Error getting branch protections. Potentially the branch doesn't exist or the token doesn't have access to it or the branch is not protected."
     );
     throw error;
@@ -70,9 +72,14 @@ export async function checkStatusOfChecks(
         ref: branch,
       })
     ).data.check_runs;
-    if (checkRuns.length === 0) {
-      coreDebug("No checks found for branch yet.");
-      throw new RequestError("No checks found for branch yet.", 418, {});
+    const requiredChecksOnBranch = await getRequiredStatusChecksForBranch(
+      githubBranchInformation
+    );
+    if (checkRuns.length === 0 && requiredChecksOnBranch.length > 0) {
+      coreError(
+        "The branch is expected to have checks, but none were reported by the Checks API. This is unexpected. If this is a timing issue, the action logic needs to be changed. Contact the author or make a PR"
+      );
+      throw new ChecksError("Status protected branch has no checks");
     }
     coreDebug(JSON.stringify(checkRuns));
     return checkRuns;
