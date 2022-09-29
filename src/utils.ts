@@ -1,10 +1,4 @@
-import {
-  setFailed,
-  endGroup,
-  debug,
-  error as setError,
-  info,
-} from "@actions/core";
+import { setFailed, debug, error as setError, info } from "@actions/core";
 import parseArgsStringToArgv from "string-argv";
 
 export async function to<T>(
@@ -21,7 +15,6 @@ export async function to<T>(
 export function errorHandler(message: string, error?: Error) {
   error && setError(error.message);
   setFailed(message);
-  endGroup();
 }
 
 /**
