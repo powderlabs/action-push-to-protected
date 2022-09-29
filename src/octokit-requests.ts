@@ -1,4 +1,8 @@
-import { error as coreError, debug as coreDebug } from "@actions/core";
+import {
+  error as coreError,
+  debug as coreDebug,
+  info as coreInfo,
+} from "@actions/core";
 import { getOctokit } from "@actions/github";
 import { RequestError } from "@octokit/request-error";
 
@@ -125,7 +129,7 @@ export async function waitForCheckSuites(
             githubBranchInformation
           );
           if (!statusOfChecks.every((check) => check.status === "completed")) {
-            coreDebug(
+            coreInfo(
               "Seems like there are still a few outstanding status checks. Try increasing the timeout."
             );
           } else if (
@@ -133,8 +137,8 @@ export async function waitForCheckSuites(
               requiredStatusChecks.includes(check.name)
             )
           ) {
-            coreDebug(
-              "Seems like not all required status checks on the branch we are trying to push to were run on the temporary branch. Check the readme on how to configure status checks to run on the temp branch also."
+            coreInfo(
+              "Seems like not all required status checks on the branch we are trying to push to were run on the temporary branch. This can happen if you haven't configured the git repo with the correct token or configured status checks to run on the temp branch correctly. Check the Readme for more information."
             );
           }
           throw new Error(`Timeout of ${timeoutSeconds} seconds reached.`);
@@ -153,7 +157,7 @@ export async function waitForCheckSuites(
               );
               if (checkRun === undefined) {
                 coreDebug(
-                  `Required check ${requiredCheck} is not present in the list of checks. The check might not have started on the branch yet.`
+                  `Required check ${requiredCheck} is not present in the list of checks. The check might not have started on the branch or `
                 );
                 return false;
               }
