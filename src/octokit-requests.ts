@@ -128,6 +128,7 @@ export async function waitForCheckSuites(
           const statusOfChecks = await getStatusOfChecks(
             githubBranchInformation
           );
+          //TODO: Fail fast
           if (!statusOfChecks.every((check) => check.status === "completed")) {
             coreInfo(
               "Seems like there are still a few outstanding status checks. Try increasing the timeout."
