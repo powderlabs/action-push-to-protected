@@ -30,7 +30,7 @@
   "author": "Shahaed Hasan",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.9.1",
+    "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.0",
     "simple-git": "^3.14.1",
     "string-argv": "^0.3.1"
